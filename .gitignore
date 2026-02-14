@@ -22,6 +22,8 @@ cmake_install.cmake
 *.exe
 Makefile
 native/build/
+_codeql_build_dir/
+_codeql_detected_source_root
 
 # Android
 *.apk
@@ -39,6 +41,7 @@ captures/
 mobile/android/.gradle/
 mobile/android/app/build/
 mobile/android/build/
+*.jar
 
 # Terraform
 *.tfstate
