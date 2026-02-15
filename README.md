@@ -354,17 +354,18 @@ For production deployments, monitor these key metrics:
 
 | Metric | Alert Threshold | Action |
 |--------|----------------|--------|
-| **Error Rate** | > 1% over 5 min | Page on-call team |
-| **Response Time (p95)** | > 500ms | Warning alert |
+| **Error Rate** | > 1% over 5 min | Warning alert |
+| **Error Rate (Critical)** | > 5% over 2 min | Page on-call team |
+| **Response Time (p95)** | > 500ms over 5 min | Warning alert |
 | **Container Restarts** | > 3 in 10 min | Page on-call team |
 | **Failed Health Checks** | > 2 consecutive | Trigger alert |
 | **CPU Usage** | > 80% for 5 min | Scale up |
-| **Memory Usage** | > 85% | Scale up or investigate leak |
+| **Memory Usage** | > 85% for 5 min | Scale up or investigate leak |
 
 #### Rollback Strategy
 
 **Automated Rollback Triggers:**
-1. **Error rate spike**: > 5% errors for 2 minutes
+1. **Error rate spike (critical)**: > 5% errors for 2 minutes (exceeds warning threshold)
 2. **Health check failures**: 3 consecutive failures
 3. **Crash loop**: Container restarts > 5 times in 5 minutes
 
