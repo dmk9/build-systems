@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   web-build:
     name: Build Web Application
@@ -38,6 +42,12 @@ jobs:
       - name: Build application
         working-directory: web
         run: npm run build
+      
+      - name: Verify build artifacts
+        working-directory: web
+        run: |
+          echo "Checking for web build artifacts..."
+          ls -la dist/ || echo "Warning: dist/ directory not found"
       
       - name: Run tests
         working-directory: web
@@ -72,7 +82,7 @@ jobs:
       
       - name: Configure CMake
         working-directory: native
-        run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+        run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       
       - name: Build library
         working-directory: native
@@ -81,6 +91,13 @@ jobs:
       - name: Run tests
         working-directory: native/build
         run: ctest --output-on-failure
+      
+      - name: Verify artifacts exist
+        working-directory: native/build
+        run: |
+          echo "Checking for build artifacts..."
+          ls -la demo || echo "Warning: demo executable not found"
+          ls -la libBuildSystemsNative.a || echo "Warning: library not found"
       
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4

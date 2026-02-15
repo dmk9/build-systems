@@ -299,9 +299,150 @@ terraform apply
 - **CodeQL Analysis**: Automated security scanning for JavaScript, C++, and Java
 - **Dependabot**: Automated dependency updates across all ecosystems
 - **npm audit**: Security scanning in CI pipeline
+- **Trivy**: Container vulnerability scanning for Docker images
 - **Secret Management**: No credentials committed, using GitHub Secrets
 - **Least Privilege**: Minimal permissions for GitHub Actions
 - **Multi-arch Images**: Support for amd64 and arm64 platforms
+
+## Architecture & Pipeline Flow
+
+### CI/CD Pipeline Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     Developer Workflow                        │
+├─────────────────────────────────────────────────────────────┤
+│ 1. Code Push → GitHub                                        │
+│ 2. CI Triggers (web, native, docker, android, infra)        │
+│ 3. Parallel Builds with Caching                             │
+│ 4. Security Scans (CodeQL, npm audit, Trivy)                │
+│ 5. Artifact Upload                                           │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│                    Release Workflow                          │
+├─────────────────────────────────────────────────────────────┤
+│ Trigger: Tag push (v*)                                       │
+│ 1. Create GitHub Release                                     │
+│ 2. Build Web + Native (with cache)                          │
+│ 3. Build Multi-arch Docker (amd64, arm64)                   │
+│ 4. Trivy Security Scan                                       │
+│ 5. Push to GHCR                                             │
+│ 6. Upload Release Artifacts                                  │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│                    Deployment Targets                         │
+├─────────────────────────────────────────────────────────────┤
+│ • GHCR: ghcr.io/dmk9/build-systems:latest                   │
+│ • GitHub Releases: Downloadable artifacts                    │
+│ • Multi-platform: linux/amd64, linux/arm64                   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Observability & Monitoring
+
+#### Health Checks
+
+The web application provides health endpoints:
+- `GET /` - Main API with system information
+- `GET /health` - Health check endpoint (returns 200 OK)
+
+#### Metrics to Monitor
+
+For production deployments, monitor these key metrics:
+
+| Metric | Alert Threshold | Action |
+|--------|----------------|--------|
+| **Error Rate** | > 1% over 5 min | Page on-call team |
+| **Response Time (p95)** | > 500ms | Warning alert |
+| **Container Restarts** | > 3 in 10 min | Page on-call team |
+| **Failed Health Checks** | > 2 consecutive | Trigger alert |
+| **CPU Usage** | > 80% for 5 min | Scale up |
+| **Memory Usage** | > 85% | Scale up or investigate leak |
+
+#### Rollback Strategy
+
+**Automated Rollback Triggers:**
+1. **Error rate spike**: > 5% errors for 2 minutes
+2. **Health check failures**: 3 consecutive failures
+3. **Crash loop**: Container restarts > 5 times in 5 minutes
+
+**Manual Rollback Process:**
+```bash
+# Identify last stable version
+kubectl rollout history deployment/build-systems
+
+# Rollback to previous version
+kubectl rollout undo deployment/build-systems
+
+# Or rollback to specific version
+kubectl rollout undo deployment/build-systems --to-revision=2
+
+# For Docker deployment
+docker pull ghcr.io/dmk9/build-systems:v1.0.0  # previous version
+docker stop current-container
+docker run -d -p 3000:3000 ghcr.io/dmk9/build-systems:v1.0.0
+```
+
+**Rollback Validation:**
+1. Verify health checks pass
+2. Check error rates return to baseline
+3. Monitor for 15 minutes
+4. Create incident report
+
+#### Logging
+
+**Application Logs:**
+- Structured JSON logging (recommended for production)
+- Log levels: ERROR, WARN, INFO, DEBUG
+- Include request IDs for tracing
+
+**Container Logs:**
+```bash
+# View logs
+docker logs -f <container-id>
+
+# Export logs
+docker logs <container-id> > app.log 2>&1
+```
+
+**Log Aggregation (Production):**
+- Use ELK stack (Elasticsearch, Logstash, Kibana)
+- Or CloudWatch Logs for AWS deployments
+- Or Google Cloud Logging for GCP
+
+#### Alerting Configuration
+
+**Alert Routing:**
+- **Critical**: Page on-call (PagerDuty/Opsgenie)
+- **Warning**: Slack channel notification
+- **Info**: Email to team
+
+**Example Prometheus Alert:**
+```yaml
+- alert: HighErrorRate
+  expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.01
+  for: 2m
+  labels:
+    severity: critical
+  annotations:
+    summary: "High error rate detected"
+    description: "Error rate is {{ $value }} (>1%)"
+```
+
+### Required Status Checks
+
+For branch protection, configure these as required checks:
+
+- ✅ `CI Pipeline / web-build`
+- ✅ `CI Pipeline / native-build`
+- ✅ `CI Pipeline / docker-build`
+- ✅ `CI Pipeline / security-scan`
+- ✅ `CodeQL Security Analysis`
+- ✅ `Infrastructure / terraform-validate`
+
+See `.github/CODEOWNERS` for code review requirements.
 
 ## Contributing
 
