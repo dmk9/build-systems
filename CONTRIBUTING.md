@@ -8,9 +8,58 @@ Thank you for your interest in contributing!
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes
 4. Run tests and linting
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
+5. Commit your changes using semantic commit messages (see below)
 6. Push to the branch (`git push origin feature/amazing-feature`)
 7. Open a Pull Request
+
+## Commit Message Convention
+
+This project follows [Conventional Commits](https://www.conventionalcommits.org/) for semantic versioning.
+
+### Format
+
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+### Types
+
+- `feat`: A new feature
+- `fix`: A bug fix
+- `docs`: Documentation changes
+- `style`: Code style changes (formatting, missing semi-colons, etc.)
+- `refactor`: Code refactoring without changing functionality
+- `perf`: Performance improvements
+- `test`: Adding or updating tests
+- `build`: Changes to build system or dependencies
+- `ci`: Changes to CI configuration
+- `chore`: Other changes that don't modify src or test files
+
+### Examples
+
+```bash
+# Feature
+git commit -m "feat(web): add user authentication endpoint"
+
+# Bug fix
+git commit -m "fix(native): handle division by zero in calculator"
+
+# Documentation
+git commit -m "docs(readme): update installation instructions"
+
+# Breaking change
+git commit -m "feat(api)!: change response format to JSON-API spec
+
+BREAKING CHANGE: API responses now follow JSON-API specification"
+```
+
+### Scope
+
+Scope can be one of: `web`, `native`, `android`, `docker`, `infra`, `ci`, `docs`
 
 ## Code Standards
 
@@ -51,9 +100,28 @@ All code changes should include tests:
 1. Ensure all tests pass
 2. Update documentation
 3. Add changelog entry
-4. Request review from maintainers
-5. Address review feedback
-6. Squash commits if requested
+4. Follow semantic commit convention
+5. Request review from maintainers
+6. Address review feedback
+7. Squash commits if requested
+
+## Semantic Release
+
+This project uses automated semantic releases. When your PR is merged to `main`:
+
+1. Commits are analyzed for type (`feat`, `fix`, etc.)
+2. Version is automatically bumped based on commit types
+3. CHANGELOG is auto-generated
+4. Release is created with artifacts
+5. Docker images are published
+
+## Branch Protection
+
+The `main` branch is protected and requires:
+- All CI checks to pass
+- At least one approval from a code owner
+- Commits to follow semantic commit convention
+- No force pushes
 
 ## Questions?
 

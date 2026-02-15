@@ -2,8 +2,12 @@
 
 A comprehensive demonstration of modern build and release automation across multiple platforms and technologies.
 
-[![CI Pipeline](https://github.com/dmk9/build-systems/workflows/CI%20Pipeline/badge.svg)](https://github.com/dmk9/build-systems/actions)
-[![Android CI](https://github.com/dmk9/build-systems/workflows/Android%20CI/badge.svg)](https://github.com/dmk9/build-systems/actions)
+[![CI Pipeline](https://github.com/dmk9/build-systems/workflows/CI%20Pipeline/badge.svg)](https://github.com/dmk9/build-systems/actions/workflows/ci.yml)
+[![Android CI](https://github.com/dmk9/build-systems/workflows/Android%20CI/badge.svg)](https://github.com/dmk9/build-systems/actions/workflows/android.yml)
+[![Infrastructure](https://github.com/dmk9/build-systems/workflows/Infrastructure/badge.svg)](https://github.com/dmk9/build-systems/actions/workflows/infra.yml)
+[![CodeQL](https://github.com/dmk9/build-systems/workflows/CodeQL%20Security%20Analysis/badge.svg)](https://github.com/dmk9/build-systems/actions/workflows/codeql.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Docker](https://img.shields.io/badge/Docker-GHCR-blue)](https://github.com/dmk9/build-systems/pkgs/container/build-systems)
 
 ## Overview
 
@@ -40,10 +44,12 @@ repo/
 │       ├── main.tf       # Main configuration
 │       ├── variables.tf  # Variable definitions
 │       └── resources.tf  # AWS resources
-└── .github/workflows/    # CI/CD pipelines
+├── .github/workflows/    # CI/CD pipelines
     ├── ci.yml           # Continuous Integration
     ├── android.yml      # Android builds
-    └── release.yml      # Release automation
+    ├── release.yml      # Release automation
+    ├── infra.yml        # Infrastructure validation
+    └── codeql.yml       # Security analysis
 ```
 
 ## Quick Start
@@ -84,6 +90,10 @@ cd mobile/android
 docker build -f docker/Dockerfile -t build-systems:latest .
 docker run -p 3000:3000 build-systems:latest
 
+# Pull from GitHub Container Registry
+docker pull ghcr.io/dmk9/build-systems:latest
+docker run -p 3000:3000 ghcr.io/dmk9/build-systems:latest
+
 # Or use docker-compose
 cd docker
 docker-compose up
@@ -103,24 +113,44 @@ terraform apply
 ### Continuous Integration (ci.yml)
 
 Runs on every push and pull request:
-- Builds web application (TypeScript)
-- Builds native library (C++ with CMake)
-- Builds Docker image
-- Validates Terraform configuration
+- Builds web application (TypeScript compilation, linting, testing)
+- Builds native library (C++ with CMake, CTest)
+- Builds Docker image with multi-arch support
+- Security scanning (npm audit)
+- **Caching**: npm dependencies, ccache for C++ builds
 
 ### Android CI (android.yml)
 
 Triggered by changes to Android code:
-- Builds Android APK
+- Builds debug and release APKs
 - Runs unit tests
 - Uploads build artifacts
+- **Caching**: Gradle dependencies and wrapper
+
+### Infrastructure (infra.yml)
+
+Validates Terraform configurations:
+- Format checking
+- Initialization
+- Validation
+- Uploads validated configuration
+
+### CodeQL Security Analysis (codeql.yml)
+
+Runs security analysis on:
+- JavaScript/TypeScript code
+- C++ code
+- Java (Android) code
+- Scheduled weekly scans
 
 ### Release Pipeline (release.yml)
 
 Triggered by version tags:
+- **Requires**: All CI tests pass
 - Creates GitHub release
 - Builds and archives all components
-- Pushes Docker image to registry
+- Pushes Docker images to GHCR
+- Multi-architecture support (amd64, arm64)
 - Attaches release artifacts
 
 ## Components
@@ -158,6 +188,7 @@ Triggered by version tags:
 - **Resources**: VPC, Subnets, ECR
 - **State**: S3 backend support
 - **Modules**: Reusable infrastructure components
+- **Security**: No credentials committed, uses environment variables
 
 ## Development
 
@@ -198,11 +229,18 @@ cd mobile/android && ./gradlew test
 
 ## Deployment
 
-### Manual Deployment
+### Docker Image from GHCR
 
-1. Build Docker image: `docker build -f docker/Dockerfile -t build-systems:latest .`
-2. Tag image: `docker tag build-systems:latest your-registry/build-systems:v1.0.0`
-3. Push image: `docker push your-registry/build-systems:v1.0.0`
+```bash
+# Pull latest release
+docker pull ghcr.io/dmk9/build-systems:latest
+
+# Pull specific version
+docker pull ghcr.io/dmk9/build-systems:v1.0.0
+
+# Run container
+docker run -p 3000:3000 ghcr.io/dmk9/build-systems:latest
+```
 
 ### Automated Deployment
 
@@ -214,10 +252,13 @@ git push origin v1.0.0
 ```
 
 This triggers the release pipeline which:
+- Runs full CI test suite
 - Creates a GitHub release
 - Builds all components
-- Publishes Docker image
+- Publishes multi-arch Docker images to GHCR
 - Attaches release artifacts
+
+See [RELEASE.md](RELEASE.md) for detailed release process.
 
 ## Infrastructure
 
@@ -233,9 +274,18 @@ The Terraform configuration creates:
 
 ```bash
 cd infra/terraform
+
+# Configure backend (optional)
+export TF_STATE_BUCKET="my-terraform-state-bucket"
+
+# Initialize
 terraform init
-terraform plan -out=tfplan
-terraform apply tfplan
+
+# Plan with backend config
+terraform plan
+
+# Apply
+terraform apply
 ```
 
 ### Infrastructure Outputs
@@ -243,6 +293,15 @@ terraform apply tfplan
 - `vpc_id` - VPC identifier
 - `public_subnet_ids` - List of subnet IDs
 - `ecr_repository_url` - Docker registry URL
+
+## Security Features
+
+- **CodeQL Analysis**: Automated security scanning for JavaScript, C++, and Java
+- **Dependabot**: Automated dependency updates across all ecosystems
+- **npm audit**: Security scanning in CI pipeline
+- **Secret Management**: No credentials committed, using GitHub Secrets
+- **Least Privilege**: Minimal permissions for GitHub Actions
+- **Multi-arch Images**: Support for amd64 and arm64 platforms
 
 ## Contributing
 

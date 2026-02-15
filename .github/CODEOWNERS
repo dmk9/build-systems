@@ -1,0 +1,27 @@
+# CODEOWNERS file
+# These owners will be the default owners for everything in the repo
+# unless a later match takes precedence.
+
+# Global owners
+* @dmk9
+
+# GitHub Actions workflows
+/.github/ @dmk9
+
+# Web application
+/web/ @dmk9
+
+# Native C++ library
+/native/ @dmk9
+
+# Android application
+/mobile/android/ @dmk9
+
+# Docker configuration
+/docker/ @dmk9
+
+# Infrastructure (Terraform)
+/infra/ @dmk9
+
+# Documentation
+*.md @dmk9
