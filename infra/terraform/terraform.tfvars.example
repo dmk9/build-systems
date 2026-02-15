@@ -1,0 +1,19 @@
+# Example Terraform variables configuration
+# Copy this file to terraform.tfvars and customize for your environment
+# IMPORTANT: Never commit terraform.tfvars with sensitive data!
+
+# AWS Configuration
+aws_region         = "us-east-1"
+environment        = "dev"
+app_name           = "build-systems"
+
+# Network Configuration
+vpc_cidr           = "10.0.0.0/16"
+availability_zones = ["us-east-1a", "us-east-1b"]
+
+# Additional Tags
+tags = {
+  Owner       = "your-team"
+  CostCenter  = "engineering"
+  Project     = "build-systems-demo"
+}
